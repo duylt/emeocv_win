@@ -6,15 +6,16 @@ using EmeocvSharp;
 using Emgu.CV;
 using System.Drawing;
 using Emgu.CV.Util;
+using Emgu.CV.Structure;
 
 namespace Emeocv_Sharp
 {
-    public class ImageProcessor : IImageProcessor
+    public class ImageProcessor : IImageProcessor,IDisposable
     {
         private Config _config { get; set; }
-        private Mat _img { get; set; }
-        private Mat _imgGray { get; set; }
-        private List<Mat> _digits { get; set; }
+        private Image<Bgr, byte> _img { get; set; }
+        private Image<Gray, byte> _imgGray { get; set; }
+        private List<Image<Gray, byte>> _digits { get; set; }
         private bool _debugWindow { get; set; }
         private bool _debugSkew { get; set; }
         private bool _debugEdges { get; set; }
@@ -27,6 +28,7 @@ namespace Emeocv_Sharp
             debugSkew(false);
             debugDigits(false);
             debugEdges(false);
+            _digits = new List<Image<Gray, byte>>();
         }
         public void debugDigits(bool bval = true)
         {
@@ -53,10 +55,10 @@ namespace Emeocv_Sharp
             findCounterDigits();
         }
 
-        public void setInput(Mat img)
+        public void setInput(Image<Bgr, byte> img)
         {
             this._img = img;
-            this._imgGray = img;
+            this._imgGray = img.Convert<Gray, byte>();
         }
 
         public void showImage()
@@ -64,24 +66,24 @@ namespace Emeocv_Sharp
             Console.ReadLine();
         }
 
-        public List<Mat> getOutput()
+        public List<Image<Gray, byte>> getOutput()
         {
             return _digits;
         }
 
         private void rotate(double rotationDegrees)
         {
-            Mat mapMatrix = new Mat(this._img.Size, this._img.Depth, this._img.NumberOfChannels);
-            Mat img_rotated = this._imgGray;
+            UMat mapMatrix = new UMat();
+            Image<Gray, byte> img_rotated = this._imgGray;
              Emgu.CV.CvInvoke.GetRotationMatrix2D(new PointF(this._imgGray.Cols / 2, this._imgGray.Rows / 2), rotationDegrees, 1, mapMatrix);
 
             Emgu.CV.CvInvoke.WarpAffine(this._imgGray, img_rotated, mapMatrix,this._img.Size);
             this._imgGray = img_rotated;
-            if (this._debugWindow)
-            {
-                Emgu.CV.CvInvoke.WarpAffine(this._img, img_rotated, mapMatrix, this._img.Size);
-                this._img = img_rotated;
-            }
+            //if (this._debugWindow)
+            //{
+            //    Emgu.CV.CvInvoke.WarpAffine(this._img, img_rotated, mapMatrix, this._img.Size);
+            //    this._img = img_rotated;
+            //}
         }
 
         private void findCounterDigits()
@@ -103,6 +105,14 @@ namespace Emeocv_Sharp
          
             filterContours(contours, boundingBoxes, filteredContours);
 
+            //Draw contours
+            for(var index = 0; index< contours.Size;index++)
+            {
+                Rectangle bounds = CvInvoke.BoundingRectangle(contours[index]);
+                this._img.Draw(bounds, new Bgr(Color.Green), 1);
+            }
+            this._imgGray.Save("J:\\contouredImage.jpg");
+
 
             //// find bounding boxes that are aligned at y position
             List<Rectangle> alignedBoundingBoxes = new List<Rectangle>(), tmpRes = new List<Rectangle>();
@@ -122,27 +132,32 @@ namespace Emeocv_Sharp
             if (_debugEdges)
             {
                 // draw contours
-                Mat cont = Mat//zeros(edges.rows, edges.cols, CV_8UC1);
-                drawContours(cont, filteredContours, -1, Scalar(255));
-                imshow("contours", cont);
+                //Mat cont = M//zeros(edges.rows, edges.cols, CV_8UC1);
+                //drawContours(cont, filteredContours, -1, Scalar(255));
+                //imshow("contours", cont);
             }
 
             //// cut out found rectangles from edged image
-            //for (int i = 0; i < alignedBoundingBoxes.size(); ++i)
-            //{
-            //    Rect roi = alignedBoundingBoxes[i];
-            //    _digits.push_back(img_ret(roi));
-            //    if (_debugDigits)
-            //    {
-            //        rectangle(_img, roi, Scalar(0, 255, 0), 2);
-            //    }
-            //}
+            for (int i = 0; i < alignedBoundingBoxes.Count; ++i)
+            {
+                Rectangle roi = alignedBoundingBoxes[i];
+
+                var img = this._imgGray.Clone();
+                img.ROI = roi;
+                img.Save(string.Format("J:\\output\\{0}_{1}.jpg", i,(new Random()).Next(100000)));
+                _digits.Add(img);
+                //if (_debugDigits)
+                //{
+                //    rectangle(_img, roi, Scalar(0, 255, 0), 2);
+                //}
+            }
         }
 
         private void findAlignedBoxes(List<Rectangle> list,int start,int end, List<Rectangle> temp)
         {
             var startRectangle = list[start];
             temp.Add(startRectangle);
+            start = start + 1;
             for (var index= start; index< end; index++)
             {
                 if (Math.Abs(startRectangle.Y - list[index].Y) < _config.digitYAlignment && Math.Abs(startRectangle.Height - list[index].Height) < 5)
@@ -169,7 +184,7 @@ namespace Emeocv_Sharp
 
         private UMat cannyEdges()
         {            
-            UMat edges = null;
+            UMat edges = new UMat();
             Emgu.CV.CvInvoke.Canny(this._imgGray, edges, this._config.cannyThreshold1, this._config.cannyThreshold2);
             return edges;
         }
@@ -182,21 +197,18 @@ namespace Emeocv_Sharp
             {
                 Rectangle bounds = CvInvoke.BoundingRectangle(contours[i]);
 
-                if (bounds.Height > _config.digitMinHeight && bounds.Height < _config.digitMaxHeight
-                        && bounds.Width > 5 && bounds.Width < bounds.Height)
-                {
+                //if (bounds.Height > _config.digitMinHeight && bounds.Height < _config.digitMaxHeight
+                //        && bounds.Width > 5 && bounds.Width < bounds.Height)
+                //{
+                if (true) { 
                     boundingBoxes.Add(bounds);
                     filteredContours.Push(contours[i]);
                 }
             }
         }
-    }
 
-    public class sortRectByX
-    {
-        public bool Sort(Rect a, Rect b)
+        public void Dispose()
         {
-            return a.X < b.X;
         }
     }
 }

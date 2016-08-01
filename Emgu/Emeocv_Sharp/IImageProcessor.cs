@@ -1,12 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using Emgu.CV;
+using Emgu.CV.Structure;
+using System.Collections.Generic;
 
 namespace Emeocv_Sharp
 {
     public interface IImageProcessor
     {
-        void setInput(Mat img);
+        void setInput(Image<Bgr, byte> img);
         void process();
-        List<Mat> getOutput();
+        List<Image<Gray, byte>> getOutput();
 
         void debugWindow(bool bval = true);
         void debugSkew(bool bval = true);

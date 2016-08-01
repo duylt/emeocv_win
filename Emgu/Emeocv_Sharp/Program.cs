@@ -1,4 +1,5 @@
-﻿using OpenCV.Net;
+﻿using Emgu.CV;
+using Emgu.CV.Structure;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,10 +12,11 @@ namespace Emeocv_Sharp
     {
         static void Main(string[] args)
         {
-            var image = CV.LoadImageM("D:\\meter.jpg", LoadImageFlags.Color);
-            Mat img_cvt = new Mat(image.Rows,image.Cols,image.Depth,image.Channels);
-            CV.CvtColor(image, img_cvt, ColorConversion.BayerBG2Gray);
-            CV.SaveImage("D:\\meter2.jpg", img_cvt);
+            using (ImageProcessor processor = new ImageProcessor())
+            {
+                processor.setInput(new Image<Bgr, byte>("J:\\meter.jpg"));
+                processor.process();
+            }
         }
     }
 }
