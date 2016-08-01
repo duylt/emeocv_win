@@ -1,14 +1,12 @@
-emeocv_win
+emeocv.net
 ======
 
-Read and recognize the counter of an electricity meter with OpenCV.
+Read and recognize the counter of an electricity meter with EMGU.NET
 
-A fork of https://github.com/skaringa/emeocv to run on windows
+Rewrite Emeocv( https://github.com/skaringa/emeocv) by EMGU.NET
 
 License
 =======
-
-Copyright 2015 Martin Kompf
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
