@@ -53,7 +53,17 @@ namespace Emeocv_Sharp
 
         public void process()
         {
-            //rotate(12);
+            this._digits.Clear();
+
+            //Rotate
+            rotate(this._config.rotationDegrees);
+
+            // detect and correct remaining skew (+- 30 deg)
+            float skew_deg = detectSkew();
+            rotate(skew_deg);
+
+
+            //
             findCounterDigits();
         }
 
@@ -222,7 +232,26 @@ namespace Emeocv_Sharp
 
         private float detectSkew()
         {
-            throw new NotImplementedException();
+            UMat edges = cannyEdges();
+            VectorOfVectorOfPointF lines = new VectorOfVectorOfPointF();
+            VectorOfVectorOfPointF filteredLines = new VectorOfVectorOfPointF();
+
+            CvInvoke.HoughLines(edges, lines, 1, Math.PI / 180, 140);
+
+            float theta_min = 60 * Math.PI / 180;
+            float theta_max = 120 * Math.PI / 180;
+            float theta_avr = 0;
+            float theta_deg = 0;
+            for (var i = 0; i < lines.Size; i++)
+            {
+                float theta = lin;
+                if (theta >= theta_min && theta <= theta_max)
+                {
+                    filteredLines.push_back(lines[i]);
+                    theta_avr += theta;
+                }
+            }
+
         }
 
         private List<PointF> drawLines(List<PointF> lines)
